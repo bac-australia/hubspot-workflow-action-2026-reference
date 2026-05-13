@@ -2,8 +2,11 @@
 
 A minimal, working reference for the HubSpot Developer Platform 2026.03 custom workflow-action pattern. Built and validated end-to-end by BAC, May 2026.
 
-- **Hitting "response body was empty" right now?** → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) — step-by-step diagnosis and fix.
-- **Want the empirical findings?** → [DIAGNOSIS.md](./DIAGNOSIS.md) — what BAC tested, what was true, why.
+> Status: reference repository, not actively maintained. Validated on HubSpot CLI 8.6.0 against platformVersion 2026.03. HubSpot platform versions drift; if you're on a later platformVersion, treat this as a starting point and confirm the canonical sample in [HubSpot/hubspot-project-components](https://github.com/HubSpot/hubspot-project-components) for the current schema.
+
+- **Hitting "response body was empty" right now?** → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - step-by-step diagnosis and fix.
+- **Want the empirical findings?** → [DIAGNOSIS.md](./DIAGNOSIS.md) - what BAC tested, what was true, why.
+- **MIT licensed.** See [LICENSE](./LICENSE).
 
 ## What this demonstrates
 
@@ -16,7 +19,7 @@ The canonical wiring for a `workflow-action` component on platformVersion 2026.0
 
 ## What this is NOT
 
-This is **not** a binding between a 2026.03 `workflow-action` and a same-project `app-function`. BAC probed extensively and found no public mechanism for that binding - the workflow-action requires an externally hosted HTTPS endpoint, full stop. The included `app-function` is unused at runtime and only present to show what a 2026.03 endpoint app-function looks like alongside.
+This is **not** a binding between a 2026.03 `workflow-action` and a same-project `app-function`. BAC probed extensively and found no public mechanism for that binding - the workflow-action requires an externally hosted HTTPS endpoint, full stop. The included `app-function` files are illustrative only; they are not invoked by the workflow-action at runtime.
 
 ## Files
 
@@ -31,15 +34,17 @@ This is **not** a binding between a 2026.03 `workflow-action` and a same-project
 
 ## Quick start
 
-1. Edit `src/app/workflow-actions/pingAction-hsmeta.json` - update `actionUrl` to a webhook.site URL (or your own endpoint) so you can see HubSpot's POST live
+1. Edit `src/app/workflow-actions/pingAction-hsmeta.json` - replace the placeholder `actionUrl` (`https://REPLACE-ME.example.com/your-endpoint`) with a webhook.site URL (for live testing) or your own external HTTPS endpoint
 2. Edit `src/app/app-hsmeta.json` - update `support.*` and any other fields
-3. Deploy:
+3. Deploy to your numeric portal ID:
    ```
-   hs project upload --account=<your-portal-id>
+   hs project upload --account=<your-numeric-portal-id>
    ```
+   Always pass `--account=<numeric-portal-id>` explicitly. Relying on the CLI's default account can push to the wrong portal.
 4. After the first deploy, the static-token private app auto-installs in the portal
-5. Open the workflow editor: `Automation > Workflows`, create a deal-based workflow, add the ping action as a step, configure inputs, save and activate
-6. Enrol a deal manually and watch your `actionUrl` receive the POST
+5. Verify the action is registered: open `Automation > Workflows`, click `+` to add an action, search for "BAC Ping Action". It should appear under Apps / Custom actions
+6. Create a deal-based workflow with the action, configure inputs, save, publish
+7. Enrol a deal manually and watch your `actionUrl` receive the POST
 
 ## Where `PRE_ACTION_EXECUTION` lives (it's not here)
 

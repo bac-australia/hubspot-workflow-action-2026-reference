@@ -21,10 +21,10 @@
       "img": []
     },
     "support": {
-      "supportEmail": "rbraamburg@bacpartners.com.au",
-      "documentationUrl": "https://bac.co",
-      "supportUrl": "https://bac.co",
-      "supportPhone": "+61492973762"
+      "supportEmail": "hello@bacpartners.com.au",
+      "documentationUrl": "https://github.com/bac-australia/hubspot-workflow-action-2026-reference",
+      "supportUrl": "https://github.com/bac-australia/hubspot-workflow-action-2026-reference/issues",
+      "supportPhone": "+61000000000"
     }
   }
 }

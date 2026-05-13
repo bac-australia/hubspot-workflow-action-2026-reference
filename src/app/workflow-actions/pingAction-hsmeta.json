@@ -2,7 +2,7 @@
   "uid": "ping_action",
   "type": "workflow-action",
   "config": {
-    "actionUrl": "https://webhook.site/a2eaa64d-fda5-4f28-8172-b933dcccc907",
+    "actionUrl": "https://REPLACE-ME.example.com/your-endpoint",
     "isPublished": true,
     "supportedClients": [
       {

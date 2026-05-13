@@ -1,15 +1,16 @@
 /**
- * Canonical 2026.03 endpoint app-function shape.
+ * ILLUSTRATIVE ONLY - this function is NOT invoked at runtime by the workflow-action
+ * in this project. On HubSpot Developer Platform 2026.03 there is no public
+ * mechanism to bind a same-project app-function as the backing for a
+ * workflow-action; the workflow-action's actionUrl must point at an externally
+ * hosted HTTPS endpoint. See DIAGNOSIS.md for the empirical evidence.
  *
- * Returns {statusCode, body, headers} as required by HubSpot Developer Platform
- * serverless functions. The body wraps {outputFields:{...}} which is the
- * documented response shape for a workflow-action actionUrl endpoint.
- *
- * NOTE: In this reference project the app-function is NOT called by the
- * workflow-action at runtime (BAC's diagnostic showed there is no public
- * binding between same-project workflow-actions and app-functions on 2026.03).
- * The function is here to demonstrate the canonical 2026.03 serverless shape
- * for completeness.
+ * This file is included as a reference for what a 2026.03 endpoint app-function
+ * looks like, and the response shape an actionUrl endpoint would return to a
+ * workflow execution request: {statusCode, body, headers} where the body wraps
+ * {outputFields:{...}}. If you stand up an external service (e.g. Cloudflare
+ * Worker, AWS Lambda Function URL) to back your workflow-action, this is the
+ * shape to mirror.
  */
 exports.main = async (context) => {
   const inputFields = context?.body?.inputFields ?? {};

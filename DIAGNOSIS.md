@@ -2,7 +2,7 @@
 
 Reference write-up produced by BAC, May 2026, in response to a client report that custom workflow action steps were failing with "The response body for this request was empty" and "An unknown error occurred" on HubSpot Developer Platform 2026.03.
 
-> **Trying to fix this symptom in your own portal?** Use [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) — step-by-step diagnosis with decision tree and copy-paste commands. This document is the empirical findings reference (what BAC tested, what was true, why).
+> **Trying to fix this symptom in your own portal?** Use [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - step-by-step diagnosis with decision tree and copy-paste commands. This document is the empirical findings reference (what BAC tested, what was true, why).
 
 ## Summary
 
@@ -23,10 +23,19 @@ BAC cloned HubSpot's official `HubSpot/hubspot-project-components` repo and insp
 ```
 actionUrl              HTTPS endpoint HubSpot POSTs to at runtime
 isPublished            Boolean, controls visibility in the workflow editor
-supportedClients       ["WORKFLOWS"] or ["WORKFLOWS","AGENTS"]
+supportedClients       Array of {client: "WORKFLOWS"} or {client: "AGENTS"} objects
 inputFields            Array of user-configured inputs
 labels                 en-locale strings
 objectTypes            ["DEAL"], ["CONTACT"], etc.
+```
+
+Concrete `supportedClients` shape (deploys cleanly on 2026.03):
+
+```json
+"supportedClients": [
+  {"client": "WORKFLOWS"},
+  {"client": "AGENTS"}
+]
 ```
 
 No `functions` field, no `PRE_ACTION_EXECUTION`, no inline JS hook anywhere in the 2026.03 workflow-action schema. The only mechanism by which a 2026.03 workflow-action invokes code is the `actionUrl` HTTPS endpoint. HubSpot's `HUBSPOT_WORKFLOW_ACTIONS.md` in the same repo confirms it directly:
@@ -84,9 +93,10 @@ The error message is what HubSpot surfaces when the HTTP request to `actionUrl` 
 
 | Cause | Description | Likelihood |
 |---|---|---|
-| Placeholder `actionUrl` | Registered value is `https://example.com` or similar non-functional URL. HubSpot dispatches, the call fails or returns empty, symptom appears. | High |
-| Non-2xx with no body | The `actionUrl` points at infrastructure returning a 5xx without a payload. | Medium |
-| Mis-shaped `PRE_ACTION_EXECUTION` | An inline `PRE_ACTION_EXECUTION` function is registered and returns `{outputFields:{...}}` instead of `{webhookUrl, body, contentType, accept, httpMethod}`. With no `webhookUrl`, HubSpot dispatches the transformed request to nothing. | Medium |
+| Placeholder or unreachable `actionUrl` | Registered value is `https://example.com`, a stale dev URL, or anything that doesn't resolve. HubSpot dispatches, the call fails or returns empty, symptom appears. **Check this first.** | High |
+| `actionUrl` returns non-2xx with no body | The `actionUrl` points at infrastructure that responds with a 5xx and no payload. | Medium |
+| Mis-shaped `PRE_ACTION_EXECUTION` | An inline `PRE_ACTION_EXECUTION` function is registered and returns `{outputFields:{...}}` instead of `{webhookUrl, body, contentType, accept, httpMethod}`. With no `webhookUrl`, HubSpot dispatches the transformed request to nothing. Only relevant if the action carries an inline function, which 2026.03 hsmeta-managed actions typically do not. | Medium |
+| Action never had a `PRE_ACTION_EXECUTION` and the symptom is unrelated to either | If the v4 GET shows `functions: []` and a valid-looking `actionUrl`, the cause is elsewhere - escalate to HubSpot Support with the evidence captured. | Lower, but not zero |
 
 Correct legacy v4 `PRE_ACTION_EXECUTION` return shape:
 
