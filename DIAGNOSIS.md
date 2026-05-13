@@ -2,6 +2,8 @@
 
 Reference write-up produced by BAC, May 2026, in response to a client report that custom workflow action steps were failing with "The response body for this request was empty" and "An unknown error occurred" on HubSpot Developer Platform 2026.03.
 
+> **Trying to fix this symptom in your own portal?** Use [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) — step-by-step diagnosis with decision tree and copy-paste commands. This document is the empirical findings reference (what BAC tested, what was true, why).
+
 ## Summary
 
 The reported symptom does not match a HubSpot runtime bug. BAC built this reference project, deployed it to a BAC-owned HubSpot portal, fired a workflow end-to-end, and captured the full lifecycle. HubSpot behaved as documented.

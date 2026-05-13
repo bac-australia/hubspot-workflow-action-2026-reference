@@ -2,7 +2,8 @@
 
 A minimal, working reference for the HubSpot Developer Platform 2026.03 custom workflow-action pattern. Built and validated end-to-end by BAC, May 2026.
 
-**Full diagnostic write-up:** [DIAGNOSIS.md](./DIAGNOSIS.md) - empirical end-to-end test, structural finding on the v4 API, three concrete tests, doc references.
+- **Hitting "response body was empty" right now?** → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) — step-by-step diagnosis and fix.
+- **Want the empirical findings?** → [DIAGNOSIS.md](./DIAGNOSIS.md) — what BAC tested, what was true, why.
 
 ## What this demonstrates
 
