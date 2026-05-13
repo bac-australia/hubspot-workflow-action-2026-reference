@@ -169,6 +169,8 @@ If you see DNS resolution failure, connection refused, 404, or empty body - the 
    ```
 3. Re-fire the workflow on a test record. The action log should now record the actual response.
 
+**In-flight failures self-recover.** Existing enrolments stuck in retry loops will pick up the new actionDefinitionVersion on their next retry and succeed (assuming the new URL returns 2xx). No manual re-enrolment needed. Verified by BAC: an enrolment that initially failed against version 6 (broken URL) succeeded automatically on a later retry once version 7 (working URL) was deployed.
+
 ### Quick interim fix to prove the diagnosis
 
 Before building the real endpoint, use webhook.site as a temporary `actionUrl` to confirm the flow works end-to-end. See [Step 3](#step-3) for the procedure.
@@ -382,5 +384,6 @@ HubSpot Support tickets take days. Steps 1–4 will resolve almost every variant
 | `supportedClients` shape | Object form only (`[{"client": "WORKFLOWS"}]`). String form `["WORKFLOWS"]` is rejected at deploy with `must be object` validation error. |
 | `objectTypes: []` semantics | Accepted by deploy. Likely means "any object type" (vs an explicit list like `["DEAL"]`). |
 | HubSpot retry behaviour on failed workflow actions | HubSpot retries automatically. Failed actions show "but will retry soon" in the event label. Multiple log entries per enrolment are normal; the action is only terminally failed after retries are exhausted. |
+| Retry uses CURRENT registered actionDefinitionVersion | Each retry picks up the latest registered action definition, NOT the version captured at enrolment. Practical: if you fix a broken `actionUrl`, in-flight failed enrolments will self-recover via retries. Verified by BAC: enrolment fired against actionDefinitionVersion 6 (broken URL), retried, succeeded against version 7 (fixed URL) after redeploy mid-retry. |
 | Smoke-test echo service | https://webhook.site |
 | HubSpot developer escalation (when end-user support won't help) | https://integrate.hubspot.com - open a developer-platform ticket with the v4 GET output and your reproduction steps |

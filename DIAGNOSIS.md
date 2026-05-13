@@ -82,7 +82,7 @@ BAC built this project using the canonical 2026.03 pattern: a workflow-action wh
 
 ### 2.2 Response behaviour
 
-webhook.site returned `HTTP 200` with a non-JSON HTML body ("This URL has no default content configured"). HubSpot recorded the action as **"Action succeeded"** with status code 200 and continued the workflow to End.
+webhook.site returned `HTTP 200` with a non-JSON HTML body ("This URL has no default content configured"). HubSpot recorded the action as **"Action succeeded"** with status code 200 and continued the workflow to End. Reproduced multiple times across different deals during BAC's testing session.
 
 Verified empirical contract:
 
@@ -90,6 +90,7 @@ Verified empirical contract:
 - HubSpot accepts any 2xx response as success. It does NOT validate the response body shape.
 - HubSpot does NOT call any same-project app-function. The `ping_function` deployed alongside the action in this project was never invoked.
 - If `actionUrl` is unreachable or returns nothing, the workflow surfaces the "empty response body" symptom.
+- Each retry uses the CURRENT registered actionDefinitionVersion at retry time. In-flight failures self-recover when the URL is fixed (see section 3, retry behaviour).
 
 ## 3. What this means for the symptom
 
@@ -106,7 +107,18 @@ Two causes have been **directly reproduced** in BAC's portal, both producing the
 
 ### Retry behaviour observed
 
-HubSpot retries failed workflow actions automatically. Both reproductions above ended with the event label containing "but will retry soon". The action does not immediately appear as "failed" in the log - it cycles through retries before HubSpot eventually marks it terminally failed. Tecala's "An unknown error occurred" framing may correspond to the post-retry-exhaustion state.
+HubSpot retries failed workflow actions automatically, and crucially, **each retry uses the current registered actionDefinitionVersion, not the version captured at enrolment time**. This was directly observed in BAC's portal:
+
+1. Action deployed with `actionUrl: https://httpbin.org/status/500` (registered version 6)
+2. Deal enrolled. First execution fails (Status 500), labelled "Action failed because of an error in the connected app, but will retry soon"
+3. Retry fires, still fails (version 6 still current at retry time)
+4. Action redeployed with `actionUrl: https://webhook.site/...` (registered version 7)
+5. Next retry on the same enrolment picks up version 7, POSTs to webhook.site, returns 200, action recorded "Action succeeded"
+6. webhook.site payload confirms `"actionDefinitionVersion": 7` on the successful retry
+
+**Practical implication:** if you correct a broken `actionUrl`, in-flight failed enrolments self-recover via retries. No manual re-enrolment needed. Tecala can fix `actionUrl` and walk away; the backlog of failed enrolments will retry against the new URL and succeed (subject to HubSpot's retry budget not having already exhausted).
+
+The "but will retry soon" suffix in event labels is the signal that the retry mechanism is active. The action only goes to terminal "failed" state after retries exhaust.
 
 Correct legacy v4 `PRE_ACTION_EXECUTION` return shape:
 
