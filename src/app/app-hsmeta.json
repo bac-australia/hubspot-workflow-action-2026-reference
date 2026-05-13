@@ -1,0 +1,30 @@
+{
+  "uid": "tec_repro_app",
+  "type": "app",
+  "config": {
+    "description": "BAC reference app for HubSpot Developer Platform 2026.03 workflow-action diagnostic. Demonstrates the canonical workflow-action -> external actionUrl pattern.",
+    "name": "BAC workflow-action reference",
+    "distribution": "private",
+    "auth": {
+      "type": "static",
+      "requiredScopes": [
+        "oauth",
+        "crm.objects.deals.read",
+        "crm.objects.deals.write"
+      ],
+      "optionalScopes": [],
+      "conditionallyRequiredScopes": []
+    },
+    "permittedUrls": {
+      "fetch": ["https://api.hubapi.com"],
+      "iframe": [],
+      "img": []
+    },
+    "support": {
+      "supportEmail": "rbraamburg@bacpartners.com.au",
+      "documentationUrl": "https://bac.co",
+      "supportUrl": "https://bac.co",
+      "supportPhone": "+61492973762"
+    }
+  }
+}

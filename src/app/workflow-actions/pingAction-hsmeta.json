@@ -1,0 +1,54 @@
+{
+  "uid": "ping_action",
+  "type": "workflow-action",
+  "config": {
+    "actionUrl": "https://webhook.site/a2eaa64d-fda5-4f28-8172-b933dcccc907",
+    "isPublished": true,
+    "supportedClients": [
+      {
+        "client": "WORKFLOWS"
+      }
+    ],
+    "inputFields": [
+      {
+        "typeDefinition": {
+          "name": "message",
+          "type": "string",
+          "fieldType": "text"
+        },
+        "supportedValueTypes": ["STATIC_VALUE"],
+        "isRequired": true
+      },
+      {
+        "typeDefinition": {
+          "name": "priority",
+          "type": "enumeration",
+          "fieldType": "select",
+          "options": [
+            {"value": "high",   "label": "High"},
+            {"value": "normal", "label": "Normal"},
+            {"value": "low",    "label": "Low"}
+          ]
+        },
+        "supportedValueTypes": ["STATIC_VALUE"],
+        "isRequired": true
+      }
+    ],
+    "labels": {
+      "en": {
+        "actionName": "BAC Ping Action",
+        "actionDescription": "Canonical 2026.03 workflow action reference. Calls actionUrl with the workflow context payload.",
+        "actionCardContent": "Ping with {{priority}}: {{message}}",
+        "inputFieldLabels": {
+          "message": "Message",
+          "priority": "Priority"
+        },
+        "inputFieldDescriptions": {
+          "message": "Any string - echoed back in outputFields",
+          "priority": "Echoed back in outputFields"
+        }
+      }
+    },
+    "objectTypes": ["DEAL"]
+  }
+}
