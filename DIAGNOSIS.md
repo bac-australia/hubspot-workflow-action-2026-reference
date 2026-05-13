@@ -26,10 +26,10 @@ isPublished            Boolean, controls visibility in the workflow editor
 supportedClients       Array of {client: "WORKFLOWS"} or {client: "AGENTS"} objects
 inputFields            Array of user-configured inputs
 labels                 en-locale strings
-objectTypes            ["DEAL"], ["CONTACT"], etc.
+objectTypes            ["DEAL"], ["CONTACT"], etc., or [] for any object type
 ```
 
-Concrete `supportedClients` shape (deploys cleanly on 2026.03):
+Concrete `supportedClients` shape (the ONLY accepted form - object, not string):
 
 ```json
 "supportedClients": [
@@ -37,6 +37,10 @@ Concrete `supportedClients` shape (deploys cleanly on 2026.03):
   {"client": "AGENTS"}
 ]
 ```
+
+The string-form abbreviation `["WORKFLOWS"]` is rejected at deploy time with `Value (WORKFLOWS) in config.supportedClients.0: must be object`. Verified by BAC.
+
+Empty `objectTypes: []` is accepted by the deploy pipeline and likely means "any object type". Verified by BAC.
 
 No `functions` field, no `PRE_ACTION_EXECUTION`, no inline JS hook anywhere in the 2026.03 workflow-action schema. The only mechanism by which a 2026.03 workflow-action invokes code is the `actionUrl` HTTPS endpoint. HubSpot's `HUBSPOT_WORKFLOW_ACTIONS.md` in the same repo confirms it directly:
 
@@ -89,14 +93,20 @@ Verified empirical contract:
 
 ## 3. What this means for the symptom
 
-The error message is what HubSpot surfaces when the HTTP request to `actionUrl` fails to resolve or returns nothing. It is NOT what HubSpot would say if `actionUrl` returned 200 with a malformed body. That path was tested live and came back as "Action succeeded".
+The error message is what HubSpot surfaces when the HTTP request to `actionUrl` fails to resolve or returns nothing. It is NOT what HubSpot would say if `actionUrl` returned 200 with a malformed body - that path was tested live and came back as "Action succeeded" (section 2).
 
-| Cause | Description | Likelihood |
-|---|---|---|
-| Placeholder or unreachable `actionUrl` | Registered value is `https://example.com`, a stale dev URL, or anything that doesn't resolve. HubSpot dispatches, the call fails or returns empty, symptom appears. **Check this first.** | High |
-| `actionUrl` returns non-2xx with no body | The `actionUrl` points at infrastructure that responds with a 5xx and no payload. | Medium |
-| Mis-shaped `PRE_ACTION_EXECUTION` | An inline `PRE_ACTION_EXECUTION` function is registered and returns `{outputFields:{...}}` instead of `{webhookUrl, body, contentType, accept, httpMethod}`. With no `webhookUrl`, HubSpot dispatches the transformed request to nothing. Only relevant if the action carries an inline function, which 2026.03 hsmeta-managed actions typically do not. | Medium |
-| Action never had a `PRE_ACTION_EXECUTION` and the symptom is unrelated to either | If the v4 GET shows `functions: []` and a valid-looking `actionUrl`, the cause is elsewhere - escalate to HubSpot Support with the evidence captured. | Lower, but not zero |
+Two causes have been **directly reproduced** in BAC's portal, both producing the exact server response text Tecala sees: `"The response body for this request was empty"`.
+
+| Cause | Reproduction | Event label HubSpot displays | Likelihood |
+|---|---|---|---|
+| Placeholder or unreachable `actionUrl` | Set `actionUrl` to `https://REPLACE-ME.example.com/your-endpoint`, enrolled deal, confirmed | "Action wasn't able to execute, but will retry soon" + server response: `The response body for this request was empty` | High - check this first |
+| `actionUrl` returns non-2xx with no body | Pointed `actionUrl` at `https://httpbin.org/status/500`, enrolled deal, confirmed | "Action failed because of an error in the connected app, but will retry soon" + server response: `The response body for this request was empty` + `Status code: 500` | Medium |
+| Mis-shaped `PRE_ACTION_EXECUTION` | Not reproduced (the `functions` field is read-only via the public v4 API on hsmeta-managed actions, see section 4). Inferred from HubSpot v4 docs: a `PRE_ACTION_EXECUTION` returning `{outputFields:{...}}` would leave HubSpot with no `webhookUrl` to dispatch to, producing the same symptom. | Same server response text expected | Medium - only if `functions[]` is non-empty in the v4 GET |
+| Action never had a `PRE_ACTION_EXECUTION` and the cause is unrelated | If the v4 GET shows `functions: []` AND a valid-looking `actionUrl` that returns 2xx with body when probed externally, the cause is elsewhere - escalate to HubSpot Support with the evidence captured. | Variable | Lower, but not zero |
+
+### Retry behaviour observed
+
+HubSpot retries failed workflow actions automatically. Both reproductions above ended with the event label containing "but will retry soon". The action does not immediately appear as "failed" in the log - it cycles through retries before HubSpot eventually marks it terminally failed. Tecala's "An unknown error occurred" framing may correspond to the post-retry-exhaustion state.
 
 Correct legacy v4 `PRE_ACTION_EXECUTION` return shape:
 

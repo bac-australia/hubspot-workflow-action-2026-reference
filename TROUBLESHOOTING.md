@@ -31,13 +31,29 @@ If you want the empirical findings BAC captured while building this guide, see [
 
 ### Auth on the v4 actions endpoint
 
-The `/automation/v4/actions/{appId}` endpoint accepts:
+The `/automation/v4/actions/{appId}` endpoint requires a **developer API key** passed as a query parameter:
 
-- **Developer API key** (`hapikey` query parameter): belongs to a HubSpot **developer account** (the parent account that owns app registrations). Issued at https://app.hubspot.com/l/developer-api-key while logged into the developer account. This is the path documented below.
+```
+?hapikey={your_developer_api_key}
+```
 
-- **OAuth access token on a developer-account app** (`Authorization: Bearer ...` header): alternative if your team has phased out hapikey usage. Requires an OAuth app registered on the developer account, with the workflow / automation scopes the v4 actions API needs.
+Developer API keys belong to a HubSpot **developer account** (the parent account that owns app registrations). Issued at https://app.hubspot.com/l/developer-api-key while logged into the developer account.
 
-A Private App PAT (`pat-na1-...`) from the install portal does NOT work here. It returns `403` with "This API can't be called using an OAuth access token. A valid developer API key must be provided in the `hapikey` query parameter." Developer hapikeys are a different credential type from regular HubSpot API keys; despite the broader API-key deprecation, developer hapikeys for the `/automation/v4/actions/...` family are still the documented path as of May 2026.
+Bearer-token / OAuth credentials are NOT accepted on this endpoint. Verified by BAC: passing a Private App PAT (`pat-na1-...`) via `Authorization: Bearer ...` returns:
+
+```
+HTTP 403
+{
+  "status": "error",
+  "message": "This API can't be called using an OAuth access token.
+              A valid developer API key must be provided in the
+              `hapikey` query parameter, and a valid `appId` must
+              be provided in the API request.",
+  "category": "INVALID_AUTHENTICATION"
+}
+```
+
+Developer hapikeys are a different credential type from regular HubSpot API keys. Despite the broader API-key deprecation, developer hapikeys for the `/automation/v4/actions/...` family are still the documented and only-accepted path as of May 2026.
 
 ### Secrets handling
 
@@ -127,7 +143,9 @@ This is the most likely scenario and the easiest fix.
 
 ### Why this produces the "response body was empty" symptom
 
-HubSpot's workflow engine reads `actionUrl` from the registered definition and dispatches an HTTP POST to it. If the URL is unreachable (DNS fail, 404, network drop), HubSpot has nothing to record in the response body and surfaces "The response body for this request was empty" / "An unknown error occurred" in the action log.
+HubSpot's workflow engine reads `actionUrl` from the registered definition and dispatches an HTTP POST to it. If the URL is unreachable (DNS fail, 404, network drop), HubSpot has nothing to record in the response body and surfaces "The response body for this request was empty" in the action log, with the event label "Action wasn't able to execute, but will retry soon".
+
+**Empirically reproduced by BAC:** setting `actionUrl` to `https://REPLACE-ME.example.com/your-endpoint`, enrolling a test deal, and capturing the workflow action log produces exactly that output. Each enrolment triggers HubSpot's retry mechanism, so you may see multiple "wasn't able to execute" entries per enrolment before HubSpot marks the action terminally failed.
 
 ### How to confirm
 
@@ -203,7 +221,7 @@ curl -X POST "{actionUrl_value}" \
 |---|---|
 | HTTP 200 with `{"outputFields":{...}}` | Endpoint works as intended. The workflow failure is elsewhere - escalate to Step 5. |
 | HTTP 200 with empty body or non-JSON | HubSpot will still record "Action succeeded" with status 200 (confirmed live). NOT the source of "empty body" error. |
-| HTTP 4xx or 5xx with no body | This IS the bug. HubSpot logs "response body was empty" because the upstream non-2xx returned nothing parseable. Fix the endpoint to return 200 + outputFields. |
+| HTTP 4xx or 5xx with no body | This IS the bug. HubSpot logs "The response body for this request was empty" and captures the status code; event label is "Action failed because of an error in the connected app, but will retry soon". Fix the endpoint to return 200 + outputFields. Verified by BAC against `https://httpbin.org/status/500`. |
 | Connection timeout / DNS error | Endpoint is unreachable. Same effect as Path A - fix the URL or the infrastructure. |
 
 ---
@@ -361,5 +379,8 @@ HubSpot Support tickets take days. Steps 1–4 will resolve almost every variant
 | Wrong `PRE_ACTION_EXECUTION` return shape (common mistake) | `callback({outputFields:{...}})` - produces "empty response body" because HubSpot has no `webhookUrl` to dispatch to. |
 | v4 actions GET URL | `https://api.hubapi.com/automation/v4/actions/{appId}?hapikey={dev_key}` |
 | `functions` field mutability | Read-only via public v4 API on hsmeta-managed actions. PATCH 200 silently drops it; PUT 405; sub-resource POST 405. |
+| `supportedClients` shape | Object form only (`[{"client": "WORKFLOWS"}]`). String form `["WORKFLOWS"]` is rejected at deploy with `must be object` validation error. |
+| `objectTypes: []` semantics | Accepted by deploy. Likely means "any object type" (vs an explicit list like `["DEAL"]`). |
+| HubSpot retry behaviour on failed workflow actions | HubSpot retries automatically. Failed actions show "but will retry soon" in the event label. Multiple log entries per enrolment are normal; the action is only terminally failed after retries are exhausted. |
 | Smoke-test echo service | https://webhook.site |
 | HubSpot developer escalation (when end-user support won't help) | https://integrate.hubspot.com - open a developer-platform ticket with the v4 GET output and your reproduction steps |
