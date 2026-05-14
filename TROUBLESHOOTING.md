@@ -24,10 +24,34 @@ If you want the empirical findings BAC captured while building this guide, see [
 
 ### What you need
 
-- The **app ID** of the HubSpot private app that owns the failing workflow-action (shown in the HubSpot developer projects UI next to the app name).
-- A **developer API key** for the developer account that owns the app. **NOT a Private App PAT** - see callout below.
+- The **app ID** of the HubSpot private app that owns the failing workflow-action.
+- A **developer API key** for the developer account that owns the app. NOT a Private App PAT.
 - A terminal with `curl`, or willingness to paste URLs into a browser.
 - Source code of the project containing the failing workflow-action - particularly `src/app/workflow-actions/*-hsmeta.json` and any function file it references.
+
+### How to find your app ID
+
+You need the numeric ID of the app that owns the failing workflow-action.
+
+1. Log into HubSpot on your **developer account** (the parent account, not the install/production portal). If you don't know which account this is, run `hs accounts list` in a terminal where the HubSpot CLI is configured - look for an account labelled `[developer]` or `[test account]`.
+2. Visit https://app.hubspot.com/developer-projects (you'll need to be on the developer account; HubSpot will redirect if you're on the wrong portal).
+3. Click into the project that contains the failing workflow-action (e.g. `tcl-automations` or whatever it's named).
+4. On the left-hand component tree, click the app component (it's the `</>` icon, typically named like `*_app` or matching your project name).
+5. The **App ID** appears in the top-right of the app details panel. It's a numeric string like `39406169`. Copy it.
+
+Alternative: if you have the HubSpot CLI configured, run `hs project info` from inside the project directory and look for the `App ID:` line.
+
+### How to find or generate a developer API key
+
+You need a key that's specific to your **developer account**, not a regular Private App PAT.
+
+1. Log into HubSpot on your developer account (same account as the app ID step above).
+2. Visit https://app.hubspot.com/l/developer-api-key. This redirects to the API key page for whichever HubSpot account you're currently logged into.
+3. If a key already exists, click **Show** and copy it. If not, click **Generate** to create one.
+
+If the page says "Developer API keys are disabled for this account": some newer developer accounts have hapikey generation disabled by default. Open a HubSpot Support ticket asking them to enable developer API keys for the account - they typically turn it on within a few hours.
+
+**Important:** developer API keys are different from Private App PATs (`pat-na1-...`). The PAT belongs to a specific portal and uses bearer-token auth (`Authorization` header). The developer API key belongs to the developer account and is passed as a `?hapikey=...` query parameter. They are not interchangeable on the `/automation/v4/actions/...` endpoints.
 
 ### Auth on the v4 actions endpoint
 
