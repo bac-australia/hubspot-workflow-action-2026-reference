@@ -16,7 +16,9 @@
           "type": "string",
           "fieldType": "text"
         },
-        "supportedValueTypes": ["STATIC_VALUE"],
+        "supportedValueTypes": [
+          "STATIC_VALUE"
+        ],
         "isRequired": true
       },
       {
@@ -25,12 +27,23 @@
           "type": "enumeration",
           "fieldType": "select",
           "options": [
-            {"value": "high",   "label": "High"},
-            {"value": "normal", "label": "Normal"},
-            {"value": "low",    "label": "Low"}
+            {
+              "value": "high",
+              "label": "High"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            },
+            {
+              "value": "low",
+              "label": "Low"
+            }
           ]
         },
-        "supportedValueTypes": ["STATIC_VALUE"],
+        "supportedValueTypes": [
+          "STATIC_VALUE"
+        ],
         "isRequired": true
       }
     ],
@@ -49,6 +62,8 @@
         }
       }
     },
-    "objectTypes": ["DEAL"]
+    "objectTypes": [
+      "DEAL"
+    ]
   }
 }

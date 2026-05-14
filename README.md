@@ -23,28 +23,42 @@ This is **not** a binding between a 2026.03 `workflow-action` and a same-project
 
 ## Files
 
+### HubSpot project (defines the workflow action)
+
 | Path | Purpose |
 |---|---|
 | `hsproject.json` | Pins `platformVersion: 2026.03` |
 | `src/app/app-hsmeta.json` | Static private app definition |
 | `src/app/workflow-actions/pingAction-hsmeta.json` | Workflow action with placeholder `actionUrl` (replace before deploy) |
-| `src/app/functions/pingFunction-hsmeta.json` | Endpoint app-function declaration |
-| `src/app/functions/pingFunction.js` | Async function with the canonical 2026.03 `{statusCode, body, headers}` shape |
+| `src/app/functions/pingFunction-hsmeta.json` | Endpoint app-function declaration (illustrative only; not invoked at runtime) |
+| `src/app/functions/pingFunction.js` | Async function with the canonical 2026.03 `{statusCode, body, headers}` shape (illustrative only) |
 | `src/app/functions/package.json` | Required by HubSpot CLI for any function component |
+
+### Receiving endpoints (what `actionUrl` points at)
+
+The `actionUrl` field must point at an externally hosted HTTPS endpoint. Two drop-in working examples are included:
+
+| Path | What it is | When to use |
+|---|---|---|
+| [`examples/cloudflare-worker/`](./examples/cloudflare-worker/) | 30-line Cloudflare Worker | **Recommended for new endpoints.** Free tier covers 100K requests/day, 5-minute deploy, global edge. |
+| [`examples/node-express/`](./examples/node-express/) | Standard Express server | For teams already operating Node.js infrastructure. Deploys to Render, Fly.io, Lambda, EC2, etc. |
+
+Both implement the same contract: accept POST, return `{"outputFields":{...}}` with HTTP 200.
 
 ## Quick start
 
-1. Edit `src/app/workflow-actions/pingAction-hsmeta.json` - replace the placeholder `actionUrl` (`https://REPLACE-ME.example.com/your-endpoint`) with a webhook.site URL (for live testing) or your own external HTTPS endpoint
-2. Edit `src/app/app-hsmeta.json` - update `support.*` and any other fields
-3. Deploy to your numeric portal ID:
+1. **Stand up an endpoint.** Deploy [`examples/cloudflare-worker/`](./examples/cloudflare-worker/) (5 minutes, free tier) or use any HTTPS endpoint you control. Copy the deployed URL.
+2. **Edit `src/app/workflow-actions/pingAction-hsmeta.json`** - replace `https://REPLACE-ME.example.com/your-endpoint` with the URL from step 1.
+3. **Edit `src/app/app-hsmeta.json`** - update `support.*` fields and the app name.
+4. **Deploy to HubSpot** using your numeric portal ID:
    ```
    hs project upload --account=<your-numeric-portal-id>
    ```
    Always pass `--account=<numeric-portal-id>` explicitly. Relying on the CLI's default account can push to the wrong portal.
-4. After the first deploy, the static-token private app auto-installs in the portal
-5. Verify the action is registered: open `Automation > Workflows`, click `+` to add an action, search for "BAC Ping Action". It should appear under Apps / Custom actions
-6. Create a deal-based workflow with the action, configure inputs, save, publish
-7. Enrol a deal manually and watch your `actionUrl` receive the POST
+5. **App auto-installs** in the portal on first deploy (static-token private apps install themselves).
+6. **Verify the action is registered**: open `Automation > Workflows` in HubSpot, click `+` to add an action, search for "BAC Ping Action". It should appear under Apps / Custom actions.
+7. **Create a deal-based workflow** with the action, configure inputs, save, publish.
+8. **Enrol a deal manually** and watch your endpoint receive the POST. The workflow's action log should record "Action succeeded".
 
 ## Where `PRE_ACTION_EXECUTION` lives (it's not here)
 

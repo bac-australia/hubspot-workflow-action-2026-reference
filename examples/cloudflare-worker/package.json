@@ -1,0 +1,13 @@
+{
+  "name": "hubspot-workflow-action-handler",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker that serves as the actionUrl backing for a HubSpot Developer Platform 2026.03 custom workflow action",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

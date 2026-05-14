@@ -1,0 +1,7 @@
+name = "hubspot-workflow-action-handler"
+main = "worker.js"
+compatibility_date = "2026-05-14"
+
+# Cloudflare Workers free tier covers 100,000 requests/day.
+# For HubSpot workflow action volumes (typically a few hundred per day per
+# automation), this is comfortable headroom without paid plans.
